@@ -1,10 +1,11 @@
+import hashlib
 import os
 import random
 import discord
 import json
 
-adminPassword = "pwd"
-adminUsr = ""
+adminPassword = "1d6442ddcfd9db1ff81df77cbefcd5afcc8c7ca952ab3101ede17a84b866d3f3"
+admin_usr = "no one yet"
 
 # Admin Shell
 
@@ -17,11 +18,10 @@ def init():
 
 
 class MyClient(discord.Client):
-
-
     client = discord.Client()
 
     async def get_data(self, username):
+        # testing how to get data from sheet
         player = '{"username, points"}'
 
         f = open('data.json', )
@@ -30,6 +30,7 @@ class MyClient(discord.Client):
         for i in data:
             if data['name'] == username:
                 return data['points']
+
 
     async def set_data(self, username, points):
 
@@ -44,10 +45,6 @@ class MyClient(discord.Client):
         global game_started
         if (message.author == client.user):
             return
-
-        elif message.content.startswith("!enable"):
-            checkpwd = message.content
-            message.author.delete
 
         elif message.content.startswith("!join"):
             if (len(participants_list) >= 10):
@@ -118,5 +115,19 @@ class MyClient(discord.Client):
                     return
                 print(winner)
                 game_started = False
+        elif message.content.startswith("!enable"):
+            # should also delete message before testing
+
+            content = str(message.content)
+            to_check_pwd = content.split( )[1]
+            if str(hashlib.sha3_256(to_check_pwd.encode('utf-8')).hexdigest()) == adminPassword:
+                print("correct")
+                await message.channel.send(">")
+                admin_usr = message.author
+            print(str(hashlib.sha3_256(to_check_pwd.encode('utf-8')).hexdigest()))
+        elif message.content.startswith("#"):
+            #Code for admin panel
+            print()
+
 client = MyClient()
-client.run(os.getenv('TOKEN'))
+client.run('')
