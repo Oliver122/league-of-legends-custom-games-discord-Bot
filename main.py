@@ -12,36 +12,92 @@ admin_usr = "no one yet"
 participants_list = []
 game_started = False
 
-# Current Coustom
-def init():
-    print("yeen")
 
+# Current Coustom
 
 class MyClient(discord.Client):
     client = discord.Client()
-
-    async def get_data(self, username):
-        # testing how to get data from sheet
-        player = '{"username, points"}'
-
-        f = open('data.json', )
-        data = json.loads(f)
-
-        for i in data:
-            if data['name'] == username:
-                return data['points']
-
-
-    async def set_data(self, username, points):
-
-        print("setData")
 
     @client.event
     async def on_ready(self):
         print("Login Version 0.1")
 
+
+
     @client.event
     async def on_message(self, message):
+
+        async def read_file():
+            # https://pynative.com/python-write-list-to-file/
+            data = []
+            with open(r'player_data.txt', 'r') as fp:
+                for line in fp:
+                    x = line[:-1]
+                    data.append(x)
+            return data
+
+        # def plus_point / def minus_point
+        # plus_point and minus_point are both equal functions just the operator changes from + to -
+        # the data is read out from the file then split up into the username and points after that
+        # its checked if participants are in the list of the users in the File. If so
+        # it iterates over all of the winning/losing participants to find their index when found it
+        # increases / decreases their value by 1.
+        # Lastly it writes to data file in the same format
+
+        async def plus_point(usernames):
+            data_list = await read_file()
+            names = []
+            points = []
+            for l in data_list:
+                data = l.split(":")
+                names.append(data[0])
+                points.append(int(data[1]))
+
+            for user in usernames:
+                if names.__contains__(str(user)):
+                    for i in range(len(names)):
+                        if str(names[i]) == str(user):
+                            points[i] = points[i] + 1
+                else:
+                    #print(user + " been appended")
+                    names.append(user)
+                    points.append(0)
+
+            # https://pynative.com/python-write-list-to-file/
+            with open('player_data.txt', 'w') as fp:
+                for i in range(len(names)):
+                    item = str(names[i]) + ":" + str(points[i])
+                    fp.write("%s\n" % item)
+            print('Done')
+
+        async def minus_point(usernames):
+            data_list = await read_file()
+            names = []
+            points = []
+            for l in data_list:
+                data = l.split(":")
+                names.append(data[0])
+                points.append(int(data[1]))
+
+            for user in usernames:
+                if names.__contains__(str(user)):
+                    for i in range(len(names)):
+                        if str(names[i]) == str(user):
+                            points[i] = points[i] - 1
+                else:
+                    #print(user + " been appended")
+                    names.append(user)
+                    points.append(0)
+
+            # https://pynative.com/python-write-list-to-file/
+            with open('player_data.txt', 'w') as fp:
+                for i in range(len(names)):
+                    item = str(names[i]) + ":" + str(points[i])
+                    fp.write("%s\n" % item)
+            #print('Done')
+
+            # display list
+
         global game_started
         if (message.author == client.user):
             return
@@ -58,7 +114,6 @@ class MyClient(discord.Client):
                 await message.channel.send(
                     f'''you are in! \n {len(participants_list)} Player in for the coustom game!''')
 
-            print(participants_list)
         elif message.content.startswith("!list"):
             if len(participants_list) == 0:
                 await message.channel.send("no one joined yet")
@@ -72,6 +127,8 @@ class MyClient(discord.Client):
                     f''' {message.author} left the coustom \n {len(participants_list)} players are still in the coustom !''')
 
         elif message.content.startswith("!start"):
+            if game_started:
+                await message.channel.send("a game is still running")
             if len(participants_list) != 10:
                 if len(participants_list) == 1:
                     await message.channel.send(
@@ -104,30 +161,45 @@ class MyClient(discord.Client):
                 winner_msg = str(message.content)
                 winner = winner_msg.split(" ")
                 if int(winner[1]) == 1:
-                    await message.channel.send("Winning Team 1 registered")
-
+                    await message.channel.send("Winning Team 1!")
+                    #Team1 gets +1 point
+                    winner_list = [participants_list[0], participants_list[1], participants_list[2], participants_list[3], participants_list[4]]
+                    await plus_point(winner_list)
+                    looser_list = [participants_list[5], participants_list[6], participants_list[7], participants_list[8], participants_list[9]]
+                    await minus_point(looser_list)
                 elif int(winner[1]) == 2:
-                    await message.channel.send("Winning Team 2 registered")
-
+                    await message.channel.send("Winning Team 2!")
+                    looser_list = [participants_list[0], participants_list[1], participants_list[2], participants_list[3], participants_list[4]]
+                    await minus_point(looser_list)
+                    winner_list = [participants_list[5], participants_list[6], participants_list[7], participants_list[8], participants_list[9]]
+                    await plus_point(winner_list)
                 else:
-                    await message.channel.send("Please Say what Team won!")
-                    print(winner)
+                    await message.channel.send("Please Say what team won the Game!")
                     return
-                print(winner)
                 game_started = False
         elif message.content.startswith("!enable"):
             # should also delete message before testing
 
             content = str(message.content)
-            to_check_pwd = content.split( )[1]
+            to_check_pwd = content.split()[1]
             if str(hashlib.sha3_256(to_check_pwd.encode('utf-8')).hexdigest()) == adminPassword:
-                print("correct")
+                #print("correct")
                 await message.channel.send(">")
-                admin_usr = message.author
+                globals()['admin_usr'] = message.author
             print(str(hashlib.sha3_256(to_check_pwd.encode('utf-8')).hexdigest()))
-        elif message.content.startswith("#"):
-            #Code for admin panel
-            print()
+
+        elif message.content.startswith("#"):  # Stops all users that are not admin_usr
+            if message.author != admin_usr:
+                #print(admin_usr)
+                return
+
+            elif message.content.startswith("#pw"):
+                content = str(message.content)
+                to_set_pwd = content.split()[1]
+                globals()['adminPassword'] = str(hashlib.sha3_256(to_set_pwd.encode('utf-8')).hexdigest())
+                await message.channel.send("password changed")
+
+
 
 client = MyClient()
-client.run('')
+client.run('OTk0MzgxMTY0NjYxOTg1Mzgw.GijgxW.6MXX7nOGK5js6mWIVjivTY3FC3WxMXlcxqzlIc')
