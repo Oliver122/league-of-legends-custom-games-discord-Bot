@@ -13,7 +13,6 @@ A Discord bot to randomize Custom game match ups
 -adjust new players with known skill
 
 # features in work
--logging of the winrate of Players
 
 -creating statistic based match making with logged data.
 
